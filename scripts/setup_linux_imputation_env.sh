@@ -68,6 +68,7 @@ if [ "$INSTALL_GRAPE" = true ]; then
   if [ ! -d "$REPOS_DIR/GRAPE" ]; then
     git clone https://github.com/maxiaoba/GRAPE "$REPOS_DIR/GRAPE"
   fi
+  rm -rf "$REPOS_DIR/GRAPE/.git"
   # GRAPE dependencies from environment.yml
   python -m pip install fancyimpute pyqt5 -q
 else
@@ -79,6 +80,7 @@ if [ "$INSTALL_DIFFPUTER" = true ]; then
   if [ ! -d "$REPOS_DIR/DiffPuter" ]; then
     git clone https://github.com/hengruizhang98/DiffPuter "$REPOS_DIR/DiffPuter"
   fi
+  rm -rf "$REPOS_DIR/DiffPuter/.git"
   # DiffPuter dependencies
   if [ -f "$REPOS_DIR/DiffPuter/requirements/diffputer.txt" ]; then
     python -m pip install -r "$REPOS_DIR/DiffPuter/requirements/diffputer.txt" -q

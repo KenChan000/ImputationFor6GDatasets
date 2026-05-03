@@ -19,6 +19,7 @@ bash scripts/setup_linux_imputation_env.sh
 ```
 
 This will install all imputation methods including GRAPE and DiffPuter research frameworks.
+The setup script clones those repositories as source snapshots and removes their nested .git folders, so they will not appear as separate git repositories in VS Code.
 
 Optional: Skip research frameworks that require external repo cloning:
 

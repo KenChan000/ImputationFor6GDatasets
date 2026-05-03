@@ -1,0 +1,23 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Datasets (large files should not be committed)
+nomadic_dataset_ULA_static/
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+
+# External research repos (optional, for clean history)
+external/GRAPE/
+external/DiffPuter/

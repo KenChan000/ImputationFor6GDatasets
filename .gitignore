@@ -9,3 +9,15 @@ __pycache__/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# Datasets (large files should not be committed)
+nomadic_dataset_ULA_static/
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+
+# External research repos (optional, for clean history)
+external/GRAPE/
+external/DiffPuter/

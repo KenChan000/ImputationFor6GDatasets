@@ -1,0 +1,4 @@
+# Installed with: pip install -r requirements-pyg.txt -f https://data.pyg.org/whl/torch-<VER>+<TAG>.html
+# The setup script fills in <VER> and <TAG> automatically based on the
+# installed torch version.
+torch_scatter

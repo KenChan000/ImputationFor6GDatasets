@@ -13,6 +13,7 @@ __pycache__/
 
 # Datasets (large files should not be committed)
 nomadic_dataset_ULA_static/
+Scenario5/
 *.csv
 *.xlsx
 *.xls

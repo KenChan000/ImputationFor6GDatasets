@@ -7,7 +7,11 @@ scipy
 # pandas<3 because fancyimpute and parts of hyperimpute were written against
 # the pandas 1.x/2.x API; pandas 3 deprecations became hard errors.
 pandas<3
-scikit-learn
+# scikit-learn pinned <1.7 because hyperimpute 0.1.17 uses LogisticRegression's
+# `multi_class` parameter, which was deprecated in sklearn 1.5 and removed in
+# 1.7. This is the most common breakage when reinstalling the env. Loosen this
+# only if you've upgraded hyperimpute to a version that supports newer sklearn.
+scikit-learn>=1.4,<1.7
 matplotlib
 seaborn
 statsmodels
@@ -29,16 +33,22 @@ ipykernel
 ipywidgets
 
 # --- PyTorch (CPU build by default; rerun pip with the cuXXX index for GPU) -
-torch
+# Upper bound on torch because PyG wheels (torch_scatter) often lag behind the
+# latest torch release. If torch_scatter install fails, check PyG's compat
+# table at https://data.pyg.org/whl/ and adjust this range.
+torch>=2.0,<2.5
 torchvision
 torchaudio
 
 # --- Baseline imputers -------------------------------------------------------
 # fancyimpute -> SoftImpute, KNN, IterativeSVD, SimpleFill
-fancyimpute
-# hyperimpute pins category_encoders, see DiffPuter's requirements/diffputer.txt
+fancyimpute>=0.7,<0.8
+# hyperimpute pinned to the exact version known to work with the rest of this
+# stack. Bumping this requires re-checking the sklearn pin above.
+hyperimpute==0.1.17
+# category_encoders pinned because hyperimpute requires this exact version,
+# see DiffPuter's requirements/diffputer.txt.
 category_encoders==2.5.1.post0
-hyperimpute
 
 # torch-geometric is pure-python and lives on PyPI. torch-scatter does NOT
 # always have a wheel for every torch+CUDA combo on PyPI, so it is installed

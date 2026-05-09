@@ -64,15 +64,14 @@ esac
 if [ -d "$REPO_DIR" ]; then
   say "Directory '$REPO_DIR' already exists, skipping clone."
 else
-  say "Cloning DiffPuter into ./$REPO_DIR at commit $DIFFPUTER_COMMIT"
-  git clone --quiet --depth 1 --branch-point "$REPO_URL" "$REPO_DIR" 2>/dev/null || \
-    git clone --quiet "$REPO_URL" "$REPO_DIR"
-  
+  say "Cloning DiffPuter into ./$REPO_DIR"
+  git clone --quiet "$REPO_URL" "$REPO_DIR"
+
   say "Checking out commit $DIFFPUTER_COMMIT"
   git -C "$REPO_DIR" fetch --quiet origin "$DIFFPUTER_COMMIT" 2>/dev/null || true
   git -C "$REPO_DIR" checkout --quiet "$DIFFPUTER_COMMIT" \
     || die "Could not check out $DIFFPUTER_COMMIT in $REPO_DIR. Is the SHA correct?"
-  
+
   say "Removing .git directory to detach from remote repository"
   rm -rf "$REPO_DIR/.git"
 fi
@@ -89,7 +88,11 @@ scipy
 # pandas<3 because fancyimpute and parts of hyperimpute were written against
 # the pandas 1.x/2.x API; pandas 3 deprecations became hard errors.
 pandas<3
-scikit-learn
+# scikit-learn pinned <1.7 because hyperimpute 0.1.17 uses LogisticRegression's
+# `multi_class` parameter, which was deprecated in sklearn 1.5 and removed in
+# 1.7. This is the most common breakage when reinstalling the env. Loosen this
+# only if you've upgraded hyperimpute to a version that supports newer sklearn.
+scikit-learn>=1.4,<1.7
 matplotlib
 seaborn
 statsmodels
@@ -111,16 +114,22 @@ ipykernel
 ipywidgets
 
 # --- PyTorch (CPU build by default; rerun pip with the cuXXX index for GPU) -
-torch
+# Upper bound on torch because PyG wheels (torch_scatter) often lag behind the
+# latest torch release. If torch_scatter install fails, check PyG's compat
+# table at https://data.pyg.org/whl/ and adjust this range.
+torch>=2.0,<2.5
 torchvision
 torchaudio
 
 # --- Baseline imputers -------------------------------------------------------
 # fancyimpute -> SoftImpute, KNN, IterativeSVD, SimpleFill
-fancyimpute
-# hyperimpute pins category_encoders, see DiffPuter's requirements/diffputer.txt
+fancyimpute>=0.7,<0.8
+# hyperimpute pinned to the exact version known to work with the rest of this
+# stack. Bumping this requires re-checking the sklearn pin above.
+hyperimpute==0.1.17
+# category_encoders pinned because hyperimpute requires this exact version,
+# see DiffPuter's requirements/diffputer.txt.
 category_encoders==2.5.1.post0
-hyperimpute
 
 # torch-geometric is pure-python and lives on PyPI. torch-scatter does NOT
 # always have a wheel for every torch+CUDA combo on PyPI, so it is installed
@@ -210,6 +219,18 @@ if bad:
     for m, e in bad:
         print(f"  - {m}: {e}")
     sys.exit(1)
+
+# Extra check: confirm sklearn version is in the supported range for hyperimpute
+import sklearn
+from packaging.version import Version
+sk_ver = Version(sklearn.__version__)
+if sk_ver >= Version("1.7"):
+    print(f"WARN: sklearn {sklearn.__version__} >= 1.7, hyperimpute 0.1.17 may break "
+          f"on LogisticRegression(multi_class=...). Check requirements-base.txt pins.")
+elif sk_ver < Version("1.4"):
+    print(f"WARN: sklearn {sklearn.__version__} < 1.4, behaviour may differ from tested range.")
+else:
+    print(f"sklearn {sklearn.__version__} is within the supported range (>=1.4,<1.7).")
 PY
 
 # ---------- 8. freeze a fully-pinned snapshot -----------------------------

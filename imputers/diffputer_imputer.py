@@ -18,11 +18,6 @@ This version reproduces the paper's preprocessing exactly:
   3. Missing entries initialize to 0 (= column mean after standardization),
      per Section 4.3 of the paper.
   4. The /2 is undone on the final output via *2.
-
-Important: This adapter is intended to be called with already-standardized
-input data. The caller (e.g. the benchmark harness) is responsible for
-StandardScaler-style preprocessing; the adapter handles only the additional
-/2 step that's part of DiffPuter's algorithm.
 """
 
 from __future__ import annotations
@@ -35,28 +30,21 @@ import numpy as np
 
 
 def _ensure_diffputer_on_path(diffputer_root: str | None = None) -> Path:
-    candidates = []
-    if diffputer_root is not None:
-        candidates.append(Path(diffputer_root))
+    repo_root = (
+        Path(diffputer_root)
+        if diffputer_root is not None
+        else Path(__file__).resolve().parents[1] / "DiffPuter"
+    ).resolve()
 
-    here = Path.cwd()
-    candidates.extend([
-        here / "DiffPuter",
-        here / "external" / "DiffPuter",
-        here.parent / "DiffPuter",
-    ])
+    if not (repo_root / "main.py").is_file() or not (repo_root / "model.py").is_file():
+        raise FileNotFoundError(
+            f"DiffPuter repo not found at {repo_root}. "
+            "Pass diffputer_root='/path/to/DiffPuter' explicitly."
+        )
 
-    for cand in candidates:
-        cand = cand.resolve()
-        if (cand / "main.py").is_file() and (cand / "model.py").is_file():
-            if str(cand) not in sys.path:
-                sys.path.insert(0, str(cand))
-            return cand
-
-    raise FileNotFoundError(
-        f"DiffPuter repo not found. Looked in: {[str(c) for c in candidates]}. "
-        f"Pass diffputer_root='/path/to/DiffPuter' explicitly."
-    )
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    return repo_root
 
 
 class DiffPuterImputer:

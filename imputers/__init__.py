@@ -10,6 +10,8 @@ from .imputers import (
 
 from .diffputer_imputer import DiffPuterImputer
 
+from .grape_imputer import GRAPEImputer
+
 __all__ = [
     "Imputer",
     "MeanImputer",
@@ -18,5 +20,6 @@ __all__ = [
     "SoftImputeWrapper",
     "HyperImputeImputer",
     "DiffPuterImputer",
+    "GRAPEImputer",
     "get_default_imputers",
 ]

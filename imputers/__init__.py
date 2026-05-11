@@ -8,6 +8,8 @@ from .imputers import (
     get_default_imputers,
 )
 
+from .diffputer_imputer import DiffPuterImputer
+
 __all__ = [
     "Imputer",
     "MeanImputer",
@@ -15,5 +17,6 @@ __all__ = [
     "MICEImputer",
     "SoftImputeWrapper",
     "HyperImputeImputer",
+    "DiffPuterImputer",
     "get_default_imputers",
 ]

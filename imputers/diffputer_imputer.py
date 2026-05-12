@@ -1,25 +1,3 @@
-"""
-DiffPuter adapter for the imputation benchmark framework.
-
-Imports algorithm components directly from a local DiffPuter checkout instead
-of using the CLI script.
-
-Reference: Zhang et al. (2025), "DiffPuter: Empowering Diffusion Models for
-Missing Data Imputation", ICLR 2025 Spotlight.
-Repo: https://github.com/hengruizhang98/DiffPuter
-
-This version reproduces the paper's preprocessing exactly:
-  1. Input is assumed already standardized (mean 0, var 1) by the caller.
-  2. The adapter additionally divides by 2 internally before training, matching
-     main.py line ~52: `X = (train_X - mean_X) / std_X / 2`. This rescaling is
-     part of the algorithm (it sets the data variance to ~0.25, which matches
-     the dynamic range the diffusion's prior N(0, sigma(T)^2*I) was tuned for),
-     not a dataset-specific choice.
-  3. Missing entries initialize to 0 (= column mean after standardization),
-     per Section 4.3 of the paper.
-  4. The /2 is undone on the final output via *2.
-"""
-
 from __future__ import annotations
 
 import sys
@@ -48,34 +26,6 @@ def _ensure_diffputer_on_path(diffputer_root: str | None = None) -> Path:
 
 
 class DiffPuterImputer:
-    """
-    DiffPuter adapter conforming to the project's Imputer interface.
-
-    Parameters
-    ----------
-    diffputer_root : str | None
-        Path to the local DiffPuter directory.
-    n_em_iterations : int
-        Number of EM rounds. Paper uses 10; ablation Fig 3 shows 4-5 is enough.
-    n_train_epochs : int
-        Diffusion training epochs per EM round (paper: 10000+ with early stop).
-    n_sampling_trials : int
-        Sampling trials averaged at inference. Paper uses 20 for evaluation;
-        ablation Sec 5.3 says N=10 is the sweet spot.
-    n_diffusion_steps : int
-        Reverse-process steps. Paper default M=50.
-    hid_dim : int
-        Denoiser MLP hidden dimension. Paper default 1024.
-    batch_size : int
-        Training batch size. Paper default 4096.
-    early_stopping_patience : int
-        Stop if loss does not improve for this many epochs. Paper default 500.
-    device : str | None
-        Torch device. None -> cuda if available else cpu.
-    verbose : bool
-        Print per-iteration progress info.
-    """
-
     name = "DiffPuter"
 
     def __init__(
@@ -109,25 +59,6 @@ class DiffPuterImputer:
         return "cuda" if torch.cuda.is_available() else "cpu"
 
     def fit_transform(self, X: np.ndarray, seed: int) -> np.ndarray:
-        """
-        Impute missing values in X using DiffPuter.
-
-        Parameters
-        ----------
-        X : np.ndarray of shape (n_samples, n_features)
-            Already standardized data (mean 0, var 1 per column) with NaN at
-            missing positions. The /2 rescaling required by DiffPuter is
-            applied internally.
-        seed : int
-            Random seed.
-
-        Returns
-        -------
-        np.ndarray of shape (n_samples, n_features)
-            Fully observed array in the same scale as input X (the internal /2
-            is undone on output). Originally observed cells are preserved
-            exactly; originally missing cells are filled by the model.
-        """
         _ensure_diffputer_on_path(self.diffputer_root)
 
         import torch
@@ -145,23 +76,12 @@ class DiffPuterImputer:
         observed_mask_np = ~np.isnan(X)
         missing_mask_np = np.isnan(X)
 
-        # ------------------------------------------------------------------
-        # Apply DiffPuter's /2 rescaling (paper preprocessing).
-        # Caller has already standardized to mean 0, var 1; we now divide
-        # by 2 to match `X = (train_X - mean_X) / std_X / 2` in main.py.
-        # ------------------------------------------------------------------
         X_scaled = X / 2.0
 
-        # ------------------------------------------------------------------
-        # Initialize missing entries at 0 (= column mean post-standardization).
-        # Section 4.3: "x^mis(0) = 0 everywhere (since the data has been
-        # standardized)".
-        # ------------------------------------------------------------------
         X_init = X_scaled.copy()
         X_init[missing_mask_np] = 0.0
         X_torch = torch.tensor(X_init, dtype=torch.float32)
 
-        # Mask convention in DiffPuter: 1 = missing, 0 = observed
         mask_torch = torch.tensor(missing_mask_np.astype(np.float32))
 
         current_filled = X_torch.clone()

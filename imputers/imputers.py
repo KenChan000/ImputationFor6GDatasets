@@ -27,7 +27,7 @@ class MeanImputer(Imputer):
 
 
 class KNNImputerWrapper(Imputer):
-    name = "KNN"
+    name = "kNN"
 
     def __init__(self, k: int = 5):
         self.k = k

@@ -186,7 +186,6 @@ class DiffPuterImputer:
                 if device != "cpu":
                     torch.cuda.empty_cache()
 
-        # Undo the /2 rescaling applied at the start.
         result = current_filled.numpy() * 2.0
 
         # Paranoia: ensure observed cells are exactly the original values

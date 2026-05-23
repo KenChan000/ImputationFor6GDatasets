@@ -1,3 +1,9 @@
+"""
+Environment checks: verify that required packages are installed and smoke-test the imputation APIs we use downstream. This is a sanity check for users running
+the notebooks, and also a debugging aid for us as we set up the repo on new machines or make changes to the DiffPuter codebase. 
+
+"""
+
 from __future__ import annotations
 
 import importlib

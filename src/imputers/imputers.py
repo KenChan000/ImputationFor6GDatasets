@@ -64,10 +64,6 @@ class SoftImputeWrapper(Imputer):
 
     def fit_transform(self, X: np.ndarray, seed: int) -> np.ndarray:
         from fancyimpute import SoftImpute as FancySoftImpute
-
-        # fancyimpute 0.7 expects sklearn's older `force_all_finite` keyword.
-        # Newer sklearn versions renamed that parameter to `ensure_all_finite`.
-        # Patch the imported helper locally so we can keep using fancyimpute.
         import fancyimpute.solver as fancy_solver
         import fancyimpute.soft_impute as fancy_soft_impute
         from sklearn.utils.validation import check_array as sklearn_check_array

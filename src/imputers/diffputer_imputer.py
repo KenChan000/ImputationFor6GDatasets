@@ -90,7 +90,7 @@ class DiffPuterImputer:
         mask_torch = torch.tensor(missing_mask_np.astype(np.float32))
 
         current_filled = X_torch.clone()
-
+        loss_history = []
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore")
 
@@ -140,7 +140,11 @@ class DiffPuterImputer:
 
                     curr_loss = batch_loss / max(n_seen, 1)
                     scheduler.step(curr_loss)
-
+                    loss_history.append({
+                        "em_iter": em_iter,
+                        "epoch": epoch,
+                        "loss": curr_loss,
+                    })
                     if curr_loss < best_loss:
                         best_loss = curr_loss
                         patience = 0
@@ -193,4 +197,5 @@ class DiffPuterImputer:
 
         result = current_filled.numpy() * 2.0   
 
+        self.loss_history_ = loss_history        
         return result.astype(np.float64)

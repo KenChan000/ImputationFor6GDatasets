@@ -56,27 +56,29 @@ class MICEImputer(Imputer):
 
 class SoftImputeWrapper(Imputer):
     """SoftImpute via fancyimpute, when compatible with installed sklearn."""
-
+ 
     name = "SoftImpute"
-
-    def __init__(self, max_iters: int = 100):
+ 
+    def __init__(self, max_iters: int = 100, rank: int = None, shrinkage_value: float = None):
         self.max_iters = max_iters
-
+        self.rank = rank
+        self.shrinkage_value = shrinkage_value
+ 
     def fit_transform(self, X: np.ndarray, seed: int) -> np.ndarray:
         from fancyimpute import SoftImpute as FancySoftImpute
         import fancyimpute.solver as fancy_solver
         import fancyimpute.soft_impute as fancy_soft_impute
         from sklearn.utils.validation import check_array as sklearn_check_array
-
+ 
         def _compat_check_array(*args, force_all_finite=True, **kwargs):
             if "ensure_all_finite" not in kwargs:
                 kwargs["ensure_all_finite"] = force_all_finite
             return sklearn_check_array(*args, **kwargs)
-
+ 
         fancy_solver.check_array = _compat_check_array
         fancy_soft_impute.check_array = _compat_check_array
-
-        model = FancySoftImpute(max_iters=self.max_iters, verbose=False)
+ 
+        model = FancySoftImpute(max_iters=self.max_iters, max_rank=self.rank, shrinkage_value=self.shrinkage_value, verbose=False)
         return np.asarray(model.fit_transform(X.copy()), dtype=float)
     
 class HyperImputeImputer(Imputer):
@@ -102,7 +104,7 @@ def get_default_imputers(
         MeanImputer(),
         KNNImputerWrapper(k=5),
         MICEImputer(max_iter=10),
-        SoftImputeWrapper(),
+        SoftImputeWrapper(rank=None, shrinkage_value=None),
         HyperImputeImputer(),
     ]
     return imputers

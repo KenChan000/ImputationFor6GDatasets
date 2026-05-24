@@ -29,11 +29,23 @@ class ExperimentConfig:
     target_cols: list[str]
     retained_cols: list[str]
     mar_driver_cols: list[str]
+    mar_score_mode: str = "single" 
     proportions: list[float] = field(default_factory=lambda: [0.10, 0.30, 0.50])
     n_seeds: int = 1
     scenarios: list[tuple[str, str]] = field(default_factory=lambda: [
         ("MCAR", "mcar"), ("MAR", "mar"), ("MNAR", "mnar"),
     ])
+
+    def __post_init__(self):
+        if self.mar_score_mode == "single" and len(self.mar_driver_cols) != 1:
+            raise ValueError(
+                f"mar_score_mode='single' needs exactly one driver column, "
+                f"got {self.mar_driver_cols}"
+            )
+        if self.mar_score_mode == "distance" and len(self.mar_driver_cols) < 2:
+            raise ValueError(
+                "mar_score_mode='distance' needs >=2 driver columns (e.g. lat, lon)"
+            )
 
     def col_index(self, cols: list[str]) -> np.ndarray:
         lut = {c: i for i, c in enumerate(self.retained_cols)}
@@ -132,7 +144,7 @@ def run_experiments(clean_data: pd.DataFrame,
                     rng = np.random.default_rng(seed)
                     mask = build_mask(mechanism, data_scaled, prop,
                                       target_idx, rng,
-                                      driver_col_idx=mar_driver_idx)
+                                      driver_col_idx=mar_driver_idx, mar_score_mode=config.mar_score_mode)
                     metrics = evaluate_one_run(data_scaled, mask, imputer, seed)
                     records.append({
                         "scenario": scenario_name,

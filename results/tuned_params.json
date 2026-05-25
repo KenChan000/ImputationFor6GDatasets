@@ -1,7 +1,7 @@
 {
   "scenario5": {
     "knn_n_neighbors": 5,
-    "softimpute_shrinkage": NaN,
+    "softimpute_shrinkage": null,
     "diffputer_hid_dim": 256,
     "grape_epochs": 10000,
     "grape_node_edge_dim": 128

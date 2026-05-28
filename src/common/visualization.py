@@ -34,6 +34,9 @@ plt.rcParams.update({
 DEFAULT_METHODS = ["Mean", "kNN", "MICE", "HyperImpute",
                    "SoftImpute", "GRAPE", "DiffPuter"]
 
+cmap = plt.get_cmap("tab10")
+METHOD_COLORS = {m: cmap(i) for i, m in enumerate(DEFAULT_METHODS)}
+
 
 def _as_dataframe(data):
     """Accept a DataFrame or a path-like pointing to a CSV; return a DataFrame."""
@@ -77,8 +80,7 @@ def plot_metric_bars(data, metric, ylabel, filename=None, methods=None):
     if len(scenarios) == 1 and not hasattr(axes, "__iter__"):
         axes = [axes]
 
-    cmap = plt.get_cmap("tab10")
-    method_color = {m: cmap(i) for i, m in enumerate(methods)}
+    method_color = {m: METHOD_COLORS.get(m, cmap(i)) for i, m in enumerate(methods)}
 
     n_methods = len(methods)
     n_props = len(proportions)

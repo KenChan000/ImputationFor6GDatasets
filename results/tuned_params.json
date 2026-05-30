@@ -4,6 +4,16 @@
     "softimpute_shrinkage": null,
     "diffputer_hid_dim": 256,
     "grape_epochs": 20000,
-    "grape_node_edge_dim": 128
+    "grape_node_edge_dim": 128,
+    "grape_lr": 0.000904395708283654,
+    "diffputer": {
+      "lr": 0.0001030751559151958,
+      "hid_dim": 512,
+      "gaussianize": true,
+      "n_em_iterations": 3,
+      "n_train_epochs": 5000,
+      "n_sampling_trials": 10,
+      "early_stopping_patience": 300
+    }
   }
 }

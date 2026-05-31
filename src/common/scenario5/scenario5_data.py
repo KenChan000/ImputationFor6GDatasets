@@ -59,31 +59,26 @@ def load_scenario5_clean(data_dir,
 
     base_dir = data_dir
 
-    # --- load index CSV, drop unnamed columns ---
     df = pd.read_csv(data_dir / csv_name)
     df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
-    # --- parse mobile-receiver GPS coordinates ---
     if verbose:
         print("Parsing location files...")
     df[["unit2_lat", "unit2_lon"]] = df["unit2_loc"].apply(
         lambda p: pd.Series(parse_loc_file(p, base_dir))
     )
 
-    # --- parse 64-beam mmWave power files ---
     if verbose:
         print("Parsing mmWave power files...")
     pwr_matrix = np.vstack([parse_pwr_file(p, base_dir) for p in df["unit1_pwr_60ghz"]])
     pwr_df = pd.DataFrame(pwr_matrix, columns=BEAM_COLS, index=df.index)
 
-    # sanity check: parsed argmax vs recorded optimal beam index
     if "unit1_beam_index" in df.columns:
         parsed_argmax = np.argmax(pwr_matrix, axis=1) + 1
         match = (parsed_argmax == df["unit1_beam_index"].values).mean()
         if verbose:
             print(f"Argmax matches unit1_beam_index: {match * 100:.2f}%")
 
-    # --- assemble and drop the redundant / leaky / constant columns ---
     df_add_pwr = pd.concat([pwr_df, df], axis=1)
     clean = df_add_pwr.drop(columns=[c for c in DROP_COLUMNS if c in df_add_pwr.columns])
 

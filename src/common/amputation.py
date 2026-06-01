@@ -24,6 +24,14 @@ def ampute_mcar(shape, prop, target_col_idx, rng):
     mask = np.zeros(shape, dtype=bool)
     sub_mask = rng.random((shape[0], len(target_col_idx))) < prop
     mask[:, target_col_idx] = sub_mask
+    return 
+
+def ampute_mcar_rowwise(shape, prop, target_col_idx, rng):
+    mask = np.zeros(shape, dtype=bool)
+    n_rows = shape[0]
+    k = int(round(prop * n_rows))
+    rows = rng.choice(n_rows, size=k, replace=False)
+    mask[np.ix_(rows, target_col_idx)] = True
     return mask
 
 
@@ -84,4 +92,6 @@ def build_mask(mechanism, data_scaled, prop, target_col_idx, rng,
                           rng, score_mode=mar_score_mode)
     if m == "mnar":
         return ampute_mnar(data_scaled, prop, target_col_idx, rng)
+    if m == "mcar_rowwise":
+        return ampute_mcar_rowwise(data_scaled.shape, prop, target_col_idx, rng)
     raise ValueError(f"Unknown mechanism: {mechanism}")

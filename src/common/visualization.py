@@ -61,31 +61,51 @@ def _resolve_methods(df: pd.DataFrame, methods) -> list[str]:
     leftover = sorted(present - set(known_in_order))
     return known_in_order + leftover
 
+DEFAULT_SCENARIOS = ["MCAR", "MAR", "MNAR", "MCAR-Row"]
+
+
+def _resolve_scenarios(df: pd.DataFrame, scenarios) -> list[str]:
+    present = list(df["scenario"].unique())
+    lookup = {s.lower(): s for s in present}  
+
+    if scenarios is None:
+        ordered = [s for s in DEFAULT_SCENARIOS if s in present]
+        return ordered + sorted(set(present) - set(ordered))
+
+    resolved, missing = [], []
+    for s in scenarios:
+        actual = lookup.get(s.lower())
+        (resolved if actual else missing).append(actual or s)
+    if missing:
+        raise ValueError(
+            f"Scenario(s) not found in data: {missing}. "
+            f"Available: {sorted(present)}"
+        )
+    return resolved
+
 
 # ---------------------------------------------------------------------------
 # Figure: metric vs proportion as grouped bar chart, one panel per mechanism.
 # ---------------------------------------------------------------------------
-def plot_metric_bars(data, metric, ylabel, filename=None, methods=None):
+def plot_metric_bars(data, metric, ylabel, filename=None,
+                     methods=None, scenarios=None, sharey=True):
     df = _as_dataframe(data)
     methods = _resolve_methods(df, methods)
-
-    scenarios = sorted(df["scenario"].unique())
+    scenarios = _resolve_scenarios(df, scenarios)
     proportions = sorted(df["proportion"].unique())
 
     agg = (df.groupby(["scenario", "proportion", "method"])[metric]
              .agg(["mean", "std"]).reset_index())
 
-    fig, axes = plt.subplots(1, 3, figsize=(9, 3), sharey=True)
-    # subplots returns a bare Axes (not an array) when there's only one panel.
-    if len(scenarios) == 1 and not hasattr(axes, "__iter__"):
-        axes = [axes]
+    n_panels = len(scenarios)
+    fig, axes = plt.subplots(1, n_panels,
+                             figsize=(3 * n_panels, 3), sharey=sharey)
+    axes = np.atleast_1d(axes)  # always iterable, even for one panel
 
     method_color = {m: METHOD_COLORS.get(m, cmap(i)) for i, m in enumerate(methods)}
 
-    n_methods = len(methods)
-    n_props = len(proportions)
-    bar_width = 0.8 / max(n_methods, 1)
-    group_centers = np.arange(n_props)
+    bar_width = 0.8 / max(len(methods), 1)
+    group_centers = np.arange(len(proportions))
 
     for ax, sc in zip(axes, scenarios):
         sub = agg[agg["scenario"] == sc]

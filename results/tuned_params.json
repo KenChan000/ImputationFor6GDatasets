@@ -2,7 +2,6 @@
   "scenario5": {
     "knn_n_neighbors": 5,
     "softimpute_shrinkage": null,
-    "diffputer_hid_dim": 256,
     "grape_epochs": 20000,
     "grape_node_edge_dim": 128,
     "grape_lr": 0.000904395708283654,
@@ -15,5 +14,21 @@
       "n_sampling_trials": 10,
       "early_stopping_patience": 300
     }
+  },
+  "scenario33": {
+    "knn_n_neighbors": 5,
+    "softimpute_shrinkage": 3.5984,
+    "diffputer": {
+      "lr": 0.00019017472528263296,
+      "hid_dim": 256,
+      "gaussianize": true,
+      "n_em_iterations": 3,
+      "n_train_epochs": 5000,
+      "n_sampling_trials": 10,
+      "early_stopping_patience": 300
+    },
+    "grape_epochs": 20000,
+    "grape_node_edge_dim": 128,
+    "grape_lr": 0.0014419212885994892
   }
 }

@@ -36,13 +36,8 @@ cd "$REPO_ROOT"
 
 # ---------- config ---------------------------------------------------------
 ENV_DIR="${ENV_DIR:-imputation_env}"
-REPO_DIR="${REPO_DIR:-external/DiffPuter}"          # vendored under external/
-REPO_URL="https://github.com/hengruizhang98/DiffPuter.git"
+REPO_DIR="${REPO_DIR:-external/DiffPuter}"          # git submodule under external/
 REQ_DIR="${REQ_DIR:-requirements}"                  # dedicated requirements/ dir
-
-# Pinned DiffPuter commit. Bump manually for a newer upstream revision.
-# Find current SHA: git -C external/DiffPuter rev-parse HEAD
-DIFFPUTER_COMMIT="${DIFFPUTER_COMMIT:-2fa55373655b9e910146d94820fc1012da0dfd75}"
 
 KERNEL_NAME="${KERNEL_NAME:-imputation-6g}"
 KERNEL_DISPLAY="Imputation (6G Datasets)"
@@ -74,20 +69,13 @@ REQ_BASE="$REQ_DIR/base.txt"
 REQ_PYG="$REQ_DIR/pyg.txt"
 REQ_FREEZE="$REQ_DIR/lock.txt"
 
-# ---------- 1. clone DiffPuter at pinned commit ---------------------------
-if [ -d "$REPO_DIR" ]; then
-  say "Directory '$REPO_DIR' already exists, skipping clone."
+# ---------- 1. initialise DiffPuter submodule -----------------------------
+if [ -f "$REPO_DIR/model.py" ]; then
+  say "DiffPuter submodule already populated at ./$REPO_DIR"
 else
-  say "Cloning DiffPuter into ./$REPO_DIR"
-  git clone --quiet "$REPO_URL" "$REPO_DIR"
-
-  say "Checking out commit $DIFFPUTER_COMMIT"
-  git -C "$REPO_DIR" fetch --quiet origin "$DIFFPUTER_COMMIT" 2>/dev/null || true
-  git -C "$REPO_DIR" checkout --quiet "$DIFFPUTER_COMMIT" \
-    || die "Could not check out $DIFFPUTER_COMMIT in $REPO_DIR. Is the SHA correct?"
-
-  say "Removing .git directory to detach from remote repository"
-  rm -rf "$REPO_DIR/.git"
+  say "Initialising DiffPuter submodule at ./$REPO_DIR"
+  git submodule update --init "$REPO_DIR" \
+    || die "Failed to initialise submodule '$REPO_DIR'.\nDid you clone with --recurse-submodules?\nIf not, run: git submodule update --init"
 fi
 
 # ---------- 2. write requirements files -----------------------------------
@@ -261,7 +249,7 @@ Files created (under $REPO_ROOT):
   requirements/pyg.txt    -- torch_scatter, separate PyG wheel index
   requirements/lock.txt   -- exact pinned versions (pip freeze snapshot)
 
-DiffPuter pinned at: $DIFFPUTER_COMMIT  (in external/DiffPuter)
+DiffPuter submodule: external/DiffPuter (pinned commit tracked by .gitmodules)
 
 Activate the env:
     source $ENV_DIR/bin/activate

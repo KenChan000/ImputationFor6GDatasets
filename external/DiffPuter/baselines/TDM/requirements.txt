@@ -1,5 +1,0 @@
-FrEIA
-numpy
-POT
-scipy
-torch

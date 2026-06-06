@@ -1,0 +1,3 @@
+[submodule "external/DiffPuter"]
+	path = external/DiffPuter
+	url = https://github.com/hengruizhang98/DiffPuter

@@ -1,6 +1,9 @@
 # Research project for CSE3000
 
-Setup for notebook imputation experiments on 6G dataset.
+Imputation experiments on the DeepSense 6G dataset: benchmarking tabular
+imputation methods across several missingness mechanisms and rates, evaluated on
+reconstruction error, distributional fidelity, and downstream beam-prediction
+accuracy.
 
 This repository includes a bootstrap script that creates a Python virtual
 environment with all the imputation libraries used in the project. Tested on
@@ -20,6 +23,25 @@ If you already cloned without `--recurse-submodules`, initialise the submodule a
 git submodule update --init
 ```
 
+## Repository layout
+
+```
+ImputationFor6GDatasets/
+├── src/
+│   ├── common/            # dataset specs, experiment config, tuning, env checks
+│   └── imputers/          # imputer wrappers for the full method shortlist
+├── external/
+│   └── DiffPuter/         # git submodule (GRAPE lives under baselines/GRAPE/)
+├── data/                  # DeepSense 6G data — gitignored, you provide it
+│   ├── Scenario5/
+│   └── Scenario33/
+├── results/               # generated figures, CSVs, and tuned_params.json
+├── imputation.ipynb       # reconstruction + distributional fidelity 
+├── tuning.ipynb           # per-method hyperparameter search
+├── downstream.ipynb       # beam-prediction downstream evaluation 
+└── setup_imputation_env.sh
+```
+
 ## Datasets
 
 The DeepSense 6G datasets are **not included** in this repository. They are released for non-commercial academic use by their original authors and must be downloaded directly from the official source.
@@ -29,13 +51,29 @@ The DeepSense 6G datasets are **not included** in this repository. They are rele
 
 ```
 data/
-├── scenario5/
+├── Scenario5/
 │   └── ...
-└── scenario33/
+└── Scenario33/
     └── ...
 ```
 
 3. If you use these datasets in your own work, cite them as mandated by the DeepSense 6G authors (see their website for the required citation).
+
+## Notebooks
+
+Each notebook has a single path-setup cell at the top where you set
+`DATASET = "scenario5"` or `DATASET = "scenario33"` — that is the only cell you
+change to switch datasets.
+
+- **`tuning.ipynb`** — per-method hyperparameter search (grid search for the
+  cheaper methods, an Optuna joint search for DiffPuter), writing the selected
+  configurations to `results/tuned_params.json`.
+- **`imputation.ipynb`** — masks the target columns under each mechanism/rate,
+  runs every imputer with the tuned parameters, and scores reconstruction
+  (RMSE/MAE) and distributional fidelity.
+- **`downstream.ipynb`** — feeds the imputed training data into the
+  scenario-specific beam predictor and reports top-k accuracy against the clean
+  ceiling.
 
 ## Imputation methods covered
 
@@ -46,12 +84,13 @@ The environment supports the full method shortlist:
 - **MICE** — `scikit-learn` (`IterativeImputer`)
 - **SoftImpute** — `fancyimpute.SoftImpute` (low-rank, important for CSI data)
 - **HyperImpute** — `hyperimpute` package
-- **GRAPE** — bundled inside DiffPuter at `DiffPuter/baselines/GRAPE/`
-- **DiffPuter** — cloned to `DiffPuter/` at the project root and imported as source
+- **GRAPE** — bundled inside DiffPuter at `external/DiffPuter/baselines/GRAPE/`
+- **DiffPuter** — git submodule at `external/DiffPuter/`, imported as source
 
-DiffPuter is cloned (not pip-installed) because it's a research codebase rather
-than a packaged library. The clone is **pinned to a specific commit** for
-reproducibility — see *Pinned DiffPuter commit* below.
+DiffPuter is a submodule (not pip-installed) because it's a research codebase
+rather than a packaged library. Because it's tracked as a submodule, git pins
+the **exact commit** for you: `git submodule update --init` checks out the
+recorded revision, so everyone builds against the same DiffPuter source.
 
 ## Prerequisites
 

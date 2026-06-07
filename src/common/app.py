@@ -1,5 +1,7 @@
 """
 Imputation-benchmark results explorer (Streamlit).
+
+Run app with `streamlit run src/common/app.py` from the repo root
 """
 from __future__ import annotations
 
@@ -198,21 +200,31 @@ def render_tuned(tuned: dict, dataset: str):
     if dataset not in tuned:
         st.info(f"No tuned parameters found for **{dataset}** in tuned_params.json.")
         return
+        
     params = tuned[dataset]
-    scalars = {k: v for k, v in params.items() if not isinstance(v, dict)}
-    nested = {k: v for k, v in params.items() if isinstance(v, dict)}
+    methods_data = {}
+    for k, v in params.items():
+        if isinstance(v, dict):
+            continue
+        
+        parts = k.split("_", 1)
+        prefix = parts[0]
+        param_name = parts[1] if len(parts) > 1 else k
+        
+        methods_data.setdefault(prefix, []).append({"hyperparameter": param_name, "value": str(v)})
 
-    if scalars:
-        sdf = pd.DataFrame(
-            [{"parameter": k, "value": v} for k, v in scalars.items()]
-        )
-        st.dataframe(sdf, hide_index=True, use_container_width=True)
-    for name, block in nested.items():
-        with st.expander(f"`{name}` hyperparameters", expanded=True):
-            bdf = pd.DataFrame(
-                [{"parameter": k, "value": v} for k, v in block.items()]
-            )
-            st.dataframe(bdf, hide_index=True, use_container_width=True)
+    for name, block in params.items():
+        if isinstance(block, dict):
+            methods_data.setdefault(name, [])
+            for sub_k, sub_v in block.items():
+                methods_data[name].append({"hyperparameter": sub_k, "value": str(sub_v)})
+
+    for method, rows in sorted(methods_data.items()):
+        display_name = method.upper() if len(method) <= 4 else method.title()
+        
+        with st.expander(f"**{display_name}** hyperparameters", expanded=True):
+            df_method = pd.DataFrame(rows)
+            st.dataframe(df_method, hide_index=True, use_container_width=True)
 
 
 def main():

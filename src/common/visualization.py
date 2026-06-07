@@ -136,6 +136,72 @@ def plot_metric_bars(data, metric, ylabel, filename=None,
         fig.savefig(filename, bbox_inches="tight")
     plt.show()
 
+def plot_2x2_grid(data, metric, ylabel, filename=None,
+                     methods=None, scenarios=None, sharey=True,
+                     ncols=None, legend_loc="right"):
+    df = _as_dataframe(data)
+    methods = _resolve_methods(df, methods)
+    scenarios = _resolve_scenarios(df, scenarios)
+    proportions = sorted(df["proportion"].unique())
+
+    agg = (df.groupby(["scenario", "proportion", "method"])[metric]
+             .agg(["mean", "std"]).reset_index())
+
+    n_panels = len(scenarios)
+    if ncols is None:
+        ncols = n_panels
+    ncols = max(1, ncols)
+    nrows = int(np.ceil(n_panels / ncols))
+
+    fig, axes = plt.subplots(nrows, ncols,
+                             figsize=(3.2 * ncols, 3 * nrows),
+                             sharey=sharey, squeeze=False)
+    axes_flat = axes.ravel()
+
+    method_color = {m: METHOD_COLORS.get(m, cmap(i)) for i, m in enumerate(methods)}
+
+    bar_width = 0.8 / max(len(methods), 1)
+    group_centers = np.arange(len(proportions))
+
+    for idx, sc in enumerate(scenarios):
+        ax = axes_flat[idx]
+        sub = agg[agg["scenario"] == sc]
+        for i, m in enumerate(methods):
+            d = (sub[sub["method"] == m]
+                 .set_index("proportion")
+                 .reindex(proportions))
+            offsets = group_centers - 0.4 + (i + 0.5) * bar_width
+            ax.bar(offsets, d["mean"], width=bar_width,
+                   yerr=d["std"], label=m, color=method_color[m],
+                   edgecolor="black", linewidth=0.4,
+                   error_kw=dict(elinewidth=0.7, capsize=1.5, ecolor="black"),
+                   alpha=0.9)
+        ax.set_title(sc)
+        ax.set_xlabel("Missing proportion")
+        ax.grid(axis="y", alpha=0.25, linewidth=0.5)
+        ax.set_xticks(group_centers)
+        ax.set_xticklabels([str(p) for p in proportions])
+        if idx % ncols == 0:                     # y-label on the left column
+            ax.set_ylabel(ylabel)
+
+    # Hide any unused cells (e.g. 3 panels in a 2x2 grid).
+    for j in range(n_panels, len(axes_flat)):
+        axes_flat[j].axis("off")
+
+    handles, labels = axes_flat[0].get_legend_handles_labels()
+    if legend_loc == "right":
+        fig.legend(handles, labels, loc="upper left",
+                   bbox_to_anchor=(1.0, 1.0), ncol=1, frameon=False)
+    else:
+        fig.legend(handles, labels, loc="lower center",
+                   ncol=len(methods), bbox_to_anchor=(0.5, -0.05),
+                   frameon=False)
+    fig.tight_layout()
+
+    if filename is not None:
+        fig.savefig(filename, bbox_inches="tight")
+    plt.show()
+
 
 # ---------------------------------------------------------------------------
 # Shared cell formatter: "mean ± std" with 3 decimals; drops ± if std is NaN.

@@ -67,8 +67,9 @@ def _correlation_frobenius_distance(data_truth: np.ndarray,
     """Frobenius distance between truth and imputed correlation matrices.
     Lower is better; zero means correlations are perfectly preserved.
     """
-    corr_truth = np.corrcoef(data_truth,   rowvar=False)
-    corr_imp   = np.corrcoef(data_imputed, rowvar=False)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        corr_truth = np.corrcoef(data_truth,   rowvar=False)
+        corr_imp   = np.corrcoef(data_imputed, rowvar=False)
     corr_truth = np.nan_to_num(corr_truth, nan=0.0)
     corr_imp   = np.nan_to_num(corr_imp,   nan=0.0)
     return float(np.linalg.norm(corr_truth - corr_imp, ord="fro"))

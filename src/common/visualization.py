@@ -202,6 +202,65 @@ def plot_2x2_grid(data, metric, ylabel, filename=None,
         fig.savefig(filename, bbox_inches="tight")
     plt.show()
 
+# ---------------------------------------------------------------------------
+# Figure: metric vs proportion, rows = datasets, columns = mechanisms.
+# Per-column y-sharing keeps MCAR/MAR readable while letting the two datasets
+# sit on a common scale within each mechanism (direct top-to-bottom compare).
+# ---------------------------------------------------------------------------
+def plot_metric_bars_datasets(datasets, metric, ylabel, filename=None,
+                              methods=None, scenarios=None, sharey="col"):
+    items = list(datasets.items()) if isinstance(datasets, dict) else list(datasets)
+    if not items:
+        raise ValueError("`datasets` is empty.")
+    items = [(label, _as_dataframe(d)) for label, d in items]
+
+    methods = _resolve_methods(items[0][1], methods)
+    scenarios = _resolve_scenarios(items[0][1], scenarios)
+    proportions = sorted(items[0][1]["proportion"].unique())
+
+    nrows, ncols = len(items), len(scenarios)
+    fig, axes = plt.subplots(nrows, ncols,
+                             figsize=(2.7 * ncols, 2.7 * nrows),
+                             sharey=sharey, squeeze=False)
+
+    method_color = {m: METHOD_COLORS.get(m, cmap(i)) for i, m in enumerate(methods)}
+    bar_width = 0.8 / max(len(methods), 1)
+    group_centers = np.arange(len(proportions))
+
+    for r, (label, df) in enumerate(items):
+        agg = (df.groupby(["scenario", "proportion", "method"])[metric]
+                 .agg(["mean", "std"]).reset_index())
+        for c, sc in enumerate(scenarios):
+            ax = axes[r][c]
+            sub = agg[agg["scenario"] == sc]
+            for i, m in enumerate(methods):
+                d = (sub[sub["method"] == m]
+                     .set_index("proportion").reindex(proportions))
+                offsets = group_centers - 0.4 + (i + 0.5) * bar_width
+                ax.bar(offsets, d["mean"], width=bar_width,
+                       yerr=d["std"], label=m, color=method_color[m],
+                       edgecolor="black", linewidth=0.4,
+                       error_kw=dict(elinewidth=0.7, capsize=1.5, ecolor="black"),
+                       alpha=0.9)
+            ax.grid(axis="y", alpha=0.25, linewidth=0.5)
+            ax.set_xticks(group_centers)
+            ax.set_xticklabels([str(p) for p in proportions])
+            if r == 0:              
+                ax.set_title(sc)
+            if r == nrows - 1:       
+                ax.set_xlabel("Missing proportion")
+            if c == 0:               
+                ax.set_ylabel(f"{label}\n{ylabel}")
+
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=len(methods),
+               bbox_to_anchor=(0.5, -0.04), frameon=False)
+    fig.tight_layout()
+
+    if filename is not None:
+        fig.savefig(filename, bbox_inches="tight")
+    plt.show()
+
 
 # ---------------------------------------------------------------------------
 # Shared cell formatter: "mean ± std" with 3 decimals; drops ± if std is NaN.
@@ -362,3 +421,60 @@ def stat_fidelity_table(data, scenario="MAR", proportion=0.3,
 
 # Backwards-compatible alias for the old name.
 stat_fidelity_table_latex = stat_fidelity_table
+
+def stat_fidelity_table_multi(datasets, scenario="MCAR", proportion=0.3,
+                              methods=None, latex=False):
+    items = list(datasets.items()) if isinstance(datasets, dict) else list(datasets)
+    if not items:
+        raise ValueError("`datasets` is empty.")
+    items = [(label, _as_dataframe(d)) for label, d in items]
+
+    sep = "$\\pm$" if latex else "\u00b1"
+    metric_specs = [
+        ("wasserstein_mean",        "Wasserstein",      "Wasserstein",    "min"),
+        ("mean_shift_mean",         "Mean shift",       "Mean shift",     "min"),
+        ("variance_retention_mean", "Var.\\ retention", "Var. retention", "near_one"),
+        ("corr_frob",               "Corr.\\ Frob.",    "Corr. Frob.",    "min"),
+    ]
+    col_names   = [(ln if latex else dn) for _, ln, dn, _ in metric_specs]
+    rule_lookup = {(ln if latex else dn): rule for _, ln, dn, rule in metric_specs}
+
+    # one shared method order so every block has identical rows
+    methods = _resolve_methods(items[0][1], methods)
+
+    block_frames, winners = [], {}
+    for label, df in items:
+        sub = df[(df["scenario"] == scenario) & (df["proportion"] == proportion)]
+        block, means_by_metric = {}, {}
+        for raw, ln, dn, _ in metric_specs:
+            name = ln if latex else dn
+            agg = sub.groupby("method")[raw].agg(["mean", "std"]).reindex(methods)
+            block[name] = [_format_cell(m, s, sep=sep)
+                           for m, s in zip(agg["mean"], agg["std"])]
+            means_by_metric[name] = agg["mean"]
+        block_frames.append(pd.DataFrame(block, index=methods))
+        for name in col_names:
+            means = means_by_metric[name]
+            winners[(label, name)] = (means.idxmin() if rule_lookup[name] == "min"
+                                      else (means - 1.0).abs().idxmin())
+
+    table = pd.concat(block_frames, keys=[lbl for lbl, _ in items],
+                      names=["Dataset", "Method"])
+
+    if latex:
+        for (label, col), winner in winners.items():
+            table.loc[(label, winner), col] = _bold_latex(table.loc[(label, winner), col])
+        return table.to_latex(escape=False, multirow=True,
+                              column_format="ll" + "c" * len(col_names))
+
+    def _highlight(_):
+        styles = pd.DataFrame("", index=table.index, columns=table.columns)
+        for (label, col), winner in winners.items():
+            styles.loc[(label, winner), col] = _BOLD_CSS
+        return styles
+
+    labels = ", ".join(lbl for lbl, _ in items)
+    return (table.style
+                 .apply(_highlight, axis=None)
+                 .set_caption(f"Statistical fidelity — {scenario}, "
+                              f"{int(proportion*100)}% missing ({labels})"))

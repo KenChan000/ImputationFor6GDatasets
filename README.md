@@ -1,13 +1,35 @@
-# Research project for CSE3000
+# Benchmarking Tabular Imputation Methods for 6G Wireless Datasets
 
-Imputation experiments on the DeepSense 6G dataset: benchmarking tabular
-imputation methods across several missingness mechanisms and rates, evaluated on
-reconstruction error, distributional fidelity, and downstream beam-prediction
-accuracy.
+> **How do different tabular imputation techniques compare when addressing missing values in 6G datasets?**
+
+A systematic benchmark of seven imputation methods — Mean, kNN, MICE, SoftImpute,
+HyperImpute, GRAPE, and DiffPuter — across four missingness mechanisms (MCAR, MAR,
+MNAR, and structured row-wise MCAR) at three rates (10 %, 30 %, 50 %), evaluated on
+reconstruction error, distributional fidelity, and downstream beam-prediction accuracy
+on two DeepSense 6G scenarios.
 
 This repository includes a bootstrap script that creates a Python virtual
 environment with all the imputation libraries used in the project. Tested on
 Linux, macOS, and Windows via **WSL** (recommended).
+
+## Research questions
+
+- **RQ1** — How do imputation methods compare in reconstruction error (RMSE/MAE)
+  across four missingness mechanisms (MCAR, MAR, MNAR, row-wise MCAR) and three
+  missingness rates (10 %, 30 %, 50 %) in 6G datasets?
+- **RQ2** — How well do imputation methods preserve the statistical properties
+  (mean, variance, distribution, inter-feature correlations) of the original 6G data?
+- **RQ3** — To what extent does the choice of imputation method affect the performance
+  of a downstream machine-learning task (beam prediction) on 6G data?
+
+## Paper
+
+This repository accompanies the Bachelor's thesis:
+
+> Kenneth Chan, *"Data quality improvement through data cleaning and augmentation
+> methods"*, CSE3000 Research Project, EEMCS, Delft University of Technology,
+> June 2026.
+> Supervisors: Rihan Hai, Yuandou Wong. Committee: Julian Urbano.
 
 ## Cloning this repository
 
@@ -61,19 +83,19 @@ data/
 
 ## Notebooks
 
-Each notebook has a single path-setup cell at the top where you set
-`DATASET = "scenario5"` or `DATASET = "scenario33"` — that is the only cell you
-change to switch datasets.
+Run the notebooks in order. Each has a single path-setup cell at the top where you set
+`DATASET = "scenario5"` or `DATASET = "scenario33"` — that is the only cell you change
+to switch datasets.
 
-- **`tuning.ipynb`** — per-method hyperparameter search (grid search for the
-  cheaper methods, an Optuna joint search for DiffPuter), writing the selected
+- **`tuning.ipynb`** — per-method hyperparameter search (grid search for kNN and
+  SoftImpute; Optuna joint search for DiffPuter and GRAPE), writing the selected
   configurations to `results/tuned_params.json`.
 - **`imputation.ipynb`** — masks the target columns under each mechanism/rate,
   runs every imputer with the tuned parameters, and scores reconstruction
-  (RMSE/MAE) and distributional fidelity.
+  (RMSE/MAE) and distributional fidelity (RQ1/RQ2).
 - **`downstream.ipynb`** — feeds the imputed training data into the
-  scenario-specific beam predictor and reports top-k accuracy against the clean
-  ceiling.
+  scenario-specific beam predictor and reports Top-K accuracy against the clean
+  ceiling (RQ3).
 
 ## Imputation methods covered
 

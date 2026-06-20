@@ -11,14 +11,14 @@ __pycache__/
 # Jupyter checkpoints
 .ipynb_checkpoints/
 
-# Datasets (large files should not be committed)
+# Datasets (large raw files should not be committed)
 data/
-*.csv
 *.xlsx
 *.xls
 *.parquet
 *.feather
 
-# External research repos (optional, for clean history)
-external/GRAPE/
-external/DiffPuter/
+# Ignore CSVs everywhere except the curated results folder
+*.csv
+!results/csv/*.csv
+
